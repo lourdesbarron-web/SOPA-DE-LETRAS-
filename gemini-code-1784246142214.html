@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sopa de Letras: Finanzas Intermedio</title>
+    <style>
+        :root {
+            --primary: #1e293b;
+            --accent: #2563eb;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --bg: #f8fafc;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
+        .status-container {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        #timer {
+            color: var(--danger);
+            background: #ffe4e6;
+            padding: 5px 15px;
+            border-radius: 20px;
+            border: 1px solid #fecdd3;
+        }
+
+        #score {
+            color: var(--accent);
+            background: #dbeafe;
+            padding: 5px 15px;
+            border-radius: 20px;
+            border: 1px solid #bfdbfe;
+        }
+
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+            max-width: 900px;
+            align-items: center;
+        }
+
+        @media (min-width: 768px) {
+            .game-container {
+                flex-direction: row;
+                align-items: flex-start;
+                justify-content: center;
+            }
+        }
+
+        /* Rejilla de la Sopa de Letras */
+        .grid-wrapper {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            overflow: auto;
+            max-width: 100%;
+        }
+
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(12, 35px);
+            grid-template-rows: repeat(12, 35px);
+            gap: 4px;
+            user-select: none;
+        }
+
+        @media (max-width: 480px) {
+            #grid {
+                grid-template-columns: repeat(12, 26px);
+                grid-template-rows: repeat(12, 26px);
+                gap: 2px;
+            }
+            .grid-item {
+                font-size: 0.8rem !important;
+            }
+        }
+
+        .grid-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f1f5f9;
+            font-weight: bold;
+            font-size: 1.1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+
+        .grid-item:hover {
+            background: #cbd5e1;
+        }
+
+        /* Palabra seleccionándose (Verde) */
+        .grid-item.selected {
+            background-color: var(--success) !important;
+            color: white;
+        }
+
+        /* Palabra ya encontrada (Fondo verde permanente) */
+        .grid-item.found {
+            background-color: var(--success) !important;
+            color: white;
+        }
+
+        /* Lista de palabras */
+        .words-container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            min-width: 250px;
+            width: 100%;
+            max-width: 320px;
+        }
+
+        .words-container h3 {
+            margin-bottom: 12px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 5px;
+        }
+
+        .words-list {
+            list-style: none;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+
+        .word-item {
+            font-size: 1rem;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        /* Palabra encontrada en la lista: Tachada en rojo */
+        .word-item.found-word {
+            color: var(--danger);
+            text-decoration: line-through;
+            font-style: italic;
+            opacity: 0.7;
+        }
+
+        /* Pantallas de fin de juego */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            padding: 20px;
+        }
+
+        .modal {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+        }
+
+        .modal h2 {
+            margin-bottom: 15px;
+        }
+
+        .modal button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        .modal button:hover {
+            background: #1d4ed8;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Sopa de Finanzas</h1>
+        <p>Nivel: Intermedio</p>
+    </header>
+
+    <div class="status-container">
+        <div id="timer">Tiempo: 05:00</div>
+        <div id="score">Encontradas: 0/8</div>
+    </div>
+
+    <div class="game-container">
+        <!-- Tablero -->
+        <div class="grid-wrapper">
+            <div id="grid"></div>
+        </div>
+
+        <!-- Lista de palabras -->
+        <div class="words-container">
+            <h3>Conceptos</h3>
+            <ul class="words-list" id="words-list"></ul>
+        </div>
+    </div>
+
+    <!-- Modales de Estado -->
+    <div class="overlay" id="overlay">
+        <div class="modal" id="modal">
+            <h2 id="modal-title">¡Fin del juego!</h2>
+            <p id="modal-message"></p>
+            <button onclick="restartGame()">Jugar de nuevo</button>
+        </div>
+    </div>
+
+    <script>
+        // Configuración del juego (12x12)
+        const GRID_SIZE = 12;
+        // Palabras de finanzas (Nivel intermedio, máx 10 letras para encajar bien)
+        const WORDS = ["ACTIVO", "PASIVO", "INTERES", "LIQUIDEZ", "ACCION", "BONOS", "INFLACION", "RIESGO"];
+        
+        let grid = [];
+        let selectedCells = [];
+        let isSelecting = false;
+        let foundWords = [];
+        let timerInterval;
+        let timeLeft = 300; // 5 minutos en segundos
+
+        // Direcciones posibles para colocar palabras (Intermedio: horizontal, vertical, diagonal hacia adelante)
+        const DIRECTIONS = [
+            [0, 1],   // Horizontal
+            [1, 0],   // Vertical
+            [1, 1],   // Diagonal abajo-derecha
+        ];
+
+        // Inicializar juego
+        function initGame() {
+            grid = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(''));
+            selectedCells = [];
+            isSelecting = false;
+            foundWords = [];
+            timeLeft = 300;
+            
+            document.getElementById('overlay').style.display = 'none';
+            document.getElementById('score').innerText = `Encontradas: 0/${WORDS.length}`;
+            
+            placeWords();
+            fillEmptyCells();
+            renderGrid();
+            renderWordsList();
+            startTimer();
+        }
+
+        // Colocar las palabras en la cuadrícula
+        function placeWords() {
+            WORDS.forEach(word => {
+                let placed = false;
+                let attempts = 0;
+                
+                while (!placed && attempts < 100) {
+                    const direction = DIRECTIONS[Math.floor(Math.random() * DIRECTIONS.length)];
+                    const row = Math.floor(Math.random() * GRID_SIZE);
+                    const col = Math.floor(Math.random() * GRID_SIZE);
+                    
+                    if (canPlaceWord(word, row, col, direction)) {
+                        for (let i = 0; i < word.length; i++) {
+                            const r = row + direction[0] * i;
+                            const c = col + direction[1] * i;
+                            grid[r][c] = word[i];
+                        }
+                        placed = true;
+                    }
+                    attempts++;
+                }
+            });
+        }
+
+        function canPlaceWord(word, row, col, direction) {
+            for (let i = 0; i < word.length; i++) {
+                const r = row + direction[0] * i;
+                const c = col + direction[1] * i;
+                
+                if (r < 0 || r >= GRID_SIZE || c < 0 || c >= GRID_SIZE) {
+                    return false;
+                }
+                if (grid[r][c] !== '' && grid[r][c] !== word[i]) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // Rellenar espacios vacíos con letras aleatorias
+        function fillEmptyCells() {
+            const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    if (grid[r][c] === '') {
+                        grid[r][c] = alphabet[Math.floor(Math.random() * alphabet.length)];
+                    }
+                }
+            }
+        }
+
+        // Renderizar el tablero de juego en el HTML
+        function renderGrid() {
+            const gridContainer = document.getElementById('grid');
+            gridContainer.innerHTML = '';
+            
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('grid-item');
+                    cell.innerText = grid[r][c];
+                    cell.dataset.row = r;
+                    cell.dataset.col = c;
+
+                    // Eventos para arrastrar/seleccionar en Desktop y Móvil
+                    cell.addEventListener('mousedown', (e) => startSelection(r, c));
+                    cell.addEventListener('mouseenter', (e) => continueSelection(r, c));
+                    
+                    // Soporte táctil móvil básico
+                    cell.addEventListener('touchstart', (e) => {
+                        e.preventDefault();
+                        startSelection(r, c);
+                    });
+                    cell.addEventListener('touchmove', handleTouchMove);
+
+                    gridContainer.appendChild(cell);
+                }
+            }
+            
+            document.addEventListener('mouseup', endSelection);
+            document.addEventListener('touchend', endSelection);
+        }
+
+        // Renderizar lista lateral de palabras a buscar
+        function renderWordsList() {
+            const listContainer = document.getElementById('words-list');
+            listContainer.innerHTML = '';
+            WORDS.forEach(word => {
+                const li = document.createElement('li');
+                li.classList.add('word-item');
+                li.id = `word-${word}`;
+                li.innerText = word;
+                listContainer.appendChild(li);
+            });
+        }
+
+        // Manejo de lógica de selección de letras
+        function startSelection(row, col) {
+            isSelecting = true;
+            selectedCells = [];
+            addCellToSelection(row, col);
+        }
+
+        function continueSelection(row, col) {
+            if (!isSelecting) return;
+            
+            // Validar que la selección siga una línea recta (horizontal, vertical o diagonal)
+            if (selectedCells.length > 0) {
+                const first = selectedCells[0];
+                const diffR = row - first.row;
+                const diffC = col - first.col;
+                
+                // Si no está alineado linealmente con el inicio, ignorar
+                if (diffR !== 0 && diffC !== 0 && Math.abs(diffR) !== Math.abs(diffC)) {
+                    return; 
+                }
+            }
+            
+            // Si ya está en la selección actual, no duplicar de manera desordenada
+            if (!selectedCells.some(cell => cell.row === row && cell.col === col)) {
+                addCellToSelection(row, col);
+            }
+        }
+
+        function addCellToSelection(row, col) {
+            const cellElement = getCellElement(row, col);
+            cellElement.classList.add('selected');
+            selectedCells.push({ row, col, letter: grid[row][col] });
+        }
+
+        function handleTouchMove(e) {
+            if (!isSelecting) return;
+            const touch = e.touches[0];
+            const element = document.elementFromPoint(touch.clientX, touch.clientY);
+            if (element && element.classList.contains('grid-item')) {
+                const r = parseInt(element.dataset.row);
+                const c = parseInt(element.dataset.col);
+                continueSelection(r, c);
+            }
+        }
+
+        function endSelection() {
+            if (!isSelecting) return;
+            isSelecting = false;
+
+            const selectedWord = selectedCells.map(c => c.letter).join('');
+            const reversedWord = selectedWord.split('').reverse().join('');
+
+            let foundWord = null;
+            if (WORDS.includes(selectedWord) && !foundWords.includes(selectedWord)) {
+                foundWord = selectedWord;
+            } else if (WORDS.includes(reversedWord) && !foundWords.includes(reversedWord)) {
+                foundWord = reversedWord;
+            }
+
+            if (foundWord) {
+                // Registrar palabra encontrada
+                foundWords.push(foundWord);
+                
+                // Pintar permanentemente en verde en la sopa
+                selectedCells.forEach(cell => {
+                    const el = getCellElement(cell.row, cell.col);
+                    el.classList.remove('selected');
+                    el.classList.add('found');
+                });
+
+                // Tachar en rojo en la lista lateral
+                const wordElement = document.getElementById(`word-${foundWord}`);
+                if (wordElement) {
+                    wordElement.classList.add('found-word');
+                }
+
+                document.getElementById('score').innerText = `Encontradas: ${foundWords.length}/${WORDS.length}`;
+
+                // Verificar Victoria
+                if (foundWords.length === WORDS.length) {
+                    endGame(true);
+                }
+            } else {
+                // Quitar color de selección si no es correcta
+                selectedCells.forEach(cell => {
+                    const el = getCellElement(cell.row, cell.col);
+                    el.classList.remove('selected');
+                });
+            }
+            selectedCells = [];
+        }
+
+        function getCellElement(row, col) {
+            return document.querySelector(`[data-row='${row}'][data-col='${col}']`);
+        }
+
+        // Reloj Cuenta Atrás (5 Minutos)
+        function startTimer() {
+            clearInterval(timerInterval);
+            updateTimerDisplay();
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    endGame(false);
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            document.getElementById('timer').innerText = `Tiempo: ${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        // Fin del Juego
+        function endGame(won) {
+            clearInterval(timerInterval);
+            const overlay = document.getElementById('overlay');
+            const title = document.getElementById('modal-title');
+            const message = document.getElementById('modal-message');
+
+            if (won) {
+                title.innerText = "¡Felicidades!";
+                title.style.color = "var(--success)";
+                message.innerText = `Has completado el reto financiero en ${300 - timeLeft} segundos. ¡Excelente dominio de conceptos!`;
+            } else {
+                title.innerText = "¡Tiempo agotado!";
+                title.style.color = "var(--danger)";
+                message.innerText = "No lograste encontrar todos los conceptos a tiempo. ¡Inténtalo de nuevo!";
+            }
+            overlay.style.display = 'flex';
+        }
+
+        function restartGame() {
+            initGame();
+        }
+
+        // Iniciar al cargar
+        window.onload = initGame;
+    </script>
+</body>
+</html>
